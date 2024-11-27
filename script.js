@@ -48,7 +48,6 @@ $(document).ready(function () {
 
     const minutes = Math.floor(elapsed / (1000 * 60));
     const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
-    const milliseconds = Math.floor((elapsed % 1000) / 100);
 
     $("#chronometer, .chronometer").text(`${pad(minutes, 2)}:${pad(seconds, 2)}`);
   }
@@ -271,5 +270,5 @@ $(document).ready(function () {
       hero.removeClass("invert");
     }
   }
-
 });
+
