@@ -1,305 +1,275 @@
 $(document).ready(function () {
-	const hero = $("#hero");
-	const obstacles = $(".obstacle");
-	const bush = $(".bush");
-	const floor = $(".floor");
-	const object = $(".object");
-	const finishLine = $("#finishLine");
-	let gameRunning = true;
-	let timerStarted = false;
-	let startTime, intervalId;
-	let highestScore = 0;
-	const scrollSpeed = 20; // Increased speed for scrolling
-	let isJumping = false;
-	let lastScrollTime = 0;
-	let isRunningRight = false;
-	let isRunningLeft = false;
-	let lastDirection = "idle-right"; // Start with idle-right
-	let touchStartX = 0;
-	let touchStartY = 0;
+  const hero = $("#hero");
+  const obstacles = $(".obstacle");
+  const bush = $(".bush");
+  const floor = $(".floor");
+  const object = $(".object");
+  const finishLine = $("#finishLine");
 
-	function setHeroState(state) {
-		hero.removeClass("idle-right idle-left running-right running-left");
-		hero.addClass(state);
-	}
+  let gameRunning = true;
+  let timerStarted = false;
+  let startTime, intervalId;
+  let highestScore = Infinity; // Inicialize com um valor maior que qualquer tempo
+  const scrollSpeed = 20; // Aumente a velocidade do scroll
+  let isJumping = false;
+  let lastScrollTime = 0;
+  let isRunningRight = false;
+  let isRunningLeft = false;
+  let lastDirection = "idle-right"; // Começar com o personagem parado à direita
+  let touchStartX = 0;
+  let touchStartY = 0;
 
-	function handleIdleState() {
-		if (lastDirection === "running-right") {
-			setHeroState("idle-right");
-		} else if (lastDirection === "running-left") {
-			setHeroState("idle-left");
-		} else {
-			setHeroState("idle-right");
-		}
-	}
+  // Função para alterar o estado do personagem
+  function setHeroState(state) {
+    hero.removeClass("idle-right idle-left running-right running-left");
+    hero.addClass(state);
+  }
 
-	setHeroState("idle-left");
+  function handleIdleState() {
+    if (lastDirection === "running-right") {
+      setHeroState("idle-right");
+    } else if (lastDirection === "running-left") {
+      setHeroState("idle-left");
+    } else {
+      setHeroState("idle-right");
+    }
+  }
 
-	function startTimer() {
-		startTime = Date.now();
-		intervalId = setInterval(updateTimer, 100);
-	}
+  setHeroState("idle-left");
 
-	function updateTimer() {
-		const now = Date.now();
-		const elapsed = now - startTime;
+  function startTimer() {
+    startTime = Date.now();
+    intervalId = setInterval(updateTimer, 100);
+  }
 
-		const minutes = Math.floor(elapsed / (1000 * 60));
-		const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
-		const milliseconds = Math.floor((elapsed % 1000) / 100);
+  function updateTimer() {
+    const now = Date.now();
+    const elapsed = now - startTime;
 
-		$("#chronometer, .chronometer").text(`${pad(minutes, 2)}:${pad(seconds, 2)}`);
-	}
+    const minutes = Math.floor(elapsed / (1000 * 60));
+    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+    const milliseconds = Math.floor((elapsed % 1000) / 100);
 
-	function pad(number, length) {
-		return number.toString().padStart(length, "0");
-	}
+    $("#chronometer, .chronometer").text(`${pad(minutes, 2)}:${pad(seconds, 2)}`);
+  }
 
-	// Handle scrolling for both mouse wheel and touch events
-	function handleScroll(scrollDirection) {
-		$(".start").fadeOut();
+  function pad(number, length) {
+    return number.toString().padStart(length, "0");
+  }
 
-		const now = Date.now();
-		if (!gameRunning || now - lastScrollTime < 16) return; // Limit to 60 fps
-		lastScrollTime = now;
+  // Função para lidar com o scroll (mouse ou toque)
+  function handleScroll(scrollDirection) {
+    $(".start").fadeOut();
 
-		if (!timerStarted) {
-			startTimer();
-			timerStarted = true;
-		}
+    const now = Date.now();
+    if (!gameRunning || now - lastScrollTime < 16) return; // Limitar a 60fps
+    lastScrollTime = now;
 
-		if (scrollDirection < 0 && !isRunningRight) {
-			isRunningRight = true;
-			isRunningLeft = false;
-			lastDirection = "running-right";
-			setHeroState("running-right");
-		} else if (scrollDirection > 0 && !isRunningLeft) {
-			isRunningLeft = true;
-			isRunningRight = false;
-			lastDirection = "running-left";
-			setHeroState("running-left");
-		}
+    if (!timerStarted) {
+      startTimer();
+      timerStarted = true;
+    }
 
-		// Reset to idle state immediately when scrolling stops
-		clearTimeout(hero.data("scrollTimeout"));
-		hero.data(
-			"scrollTimeout",
-			setTimeout(() => {
-				isRunningRight = false;
-				isRunningLeft = false;
-				handleIdleState();
-			}, 200)
-		); // Adjust the delay as needed
+    if (scrollDirection < 0 && !isRunningRight) {
+      isRunningRight = true;
+      isRunningLeft = false;
+      lastDirection = "running-right";
+      setHeroState("running-right");
+    } else if (scrollDirection > 0 && !isRunningLeft) {
+      isRunningLeft = true;
+      isRunningRight = false;
+      lastDirection = "running-left";
+      setHeroState("running-left");
+    }
 
-		requestAnimationFrame(() => {
-			$(".obstacle, .bush, .floor, .object, #finishLine").each(function () {
-				const left = parseInt($(this).css("left"));
-				$(this).css("left", left - scrollDirection * scrollSpeed + "px");
-			});
-			checkWin();
-			checkHeroSilhouetteOverlap();
-		});
-	}
+    // Resetar para o estado de ocioso quando o scroll parar
+    clearTimeout(hero.data("scrollTimeout"));
+    hero.data(
+      "scrollTimeout",
+      setTimeout(() => {
+        isRunningRight = false;
+        isRunningLeft = false;
+        handleIdleState();
+      }, 200)
+    );
 
-	$(window).on("mousewheel DOMMouseScroll", function (e) {
-		const delta = e.originalEvent.wheelDelta || -e.originalEvent.detail;
-		const scrollDirection = delta < 0 ? 1 : -1;
-		handleScroll(scrollDirection);
-	});
+    requestAnimationFrame(() => {
+      $(".obstacle, .bush, .floor, .object, #finishLine").each(function () {
+        const left = parseInt($(this).css("left"));
+        $(this).css("left", left - scrollDirection * scrollSpeed + "px");
+      });
+      checkWin();
+      checkHeroSilhouetteOverlap();
+    });
+  }
 
-	// Handle touch events for scrolling
-	$(document).on("touchstart", function (e) {
-		touchStartX = e.originalEvent.touches[0].pageX;
-		touchStartY = e.originalEvent.touches[0].pageY;
-	});
+  $(window).on("wheel", function (e) {
+    const scrollDirection = e.originalEvent.deltaY < 0 ? -1 : 1;
+    handleScroll(scrollDirection);
+  });
 
-	$(document).on("touchmove", function (e) {
-		const touchEndX = e.originalEvent.touches[0].pageX;
-		const touchEndY = e.originalEvent.touches[0].pageY;
-		const deltaX = touchEndX - touchStartX;
-		const deltaY = touchEndY - touchStartY;
+  // Manipulador de toque
+  $(document).on("touchstart", function (e) {
+    touchStartX = e.originalEvent.touches[0].pageX;
+    touchStartY = e.originalEvent.touches[0].pageY;
+  });
 
-		if (Math.abs(deltaX) > Math.abs(deltaY)) {
-			const scrollDirection = deltaX < 0 ? 1 : -1;
-			handleScroll(scrollDirection);
-		}
-	});
+  $(document).on("touchmove", function (e) {
+    const touchEndX = e.originalEvent.touches[0].pageX;
+    const touchEndY = e.originalEvent.touches[0].pageY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
 
-	// Handle Arrow Up key and touch events for jumping
-	$(document).keydown(function (e) {
-		if (!gameRunning || isJumping) return;
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      const scrollDirection = deltaX < 0 ? 1 : -1;
+      handleScroll(scrollDirection);
+    }
+  });
 
-		if (e.key === "ArrowUp") {
-			handleJump();
-		}
-	});
+  // Detectar pulo
+  $(document).keydown(function (e) {
+    if (!gameRunning || isJumping) return;
 
-	$(document).on("touchstart", function (e) {
-		const touchEndY = e.originalEvent.touches[0].pageY;
+    if (e.key === "ArrowUp") {
+      handleJump();
+    }
+  });
 
-		if (touchStartY - touchEndY > 50) {
-			// Swipe up detected
-			handleJump();
-		}
-	});
+  $(document).on("touchstart", function (e) {
+    const touchEndY = e.originalEvent.touches[0].pageY;
 
-	function handleJump() {
-		if (!gameRunning || isJumping) return;
+    if (touchStartY - touchEndY > 50) {
+      // Detecção de swipe para cima
+      handleJump();
+    }
+  });
 
-		isJumping = true;
-		hero.addClass("jump");
-		setTimeout(() => {
-			hero.removeClass("jump");
-			isJumping = false;
-		}, 500); // Duration of the jump
-	}
+  function handleJump() {
+    if (!gameRunning || isJumping) return;
 
-	function checkCollision() {
-		const tolerance = 10;
-		const heroPos = hero[0].getBoundingClientRect();
+    isJumping = true;
+    hero.addClass("jump");
+    setTimeout(() => {
+      hero.removeClass("jump");
+      isJumping = false;
+    }, 500); // Duração do pulo
+  }
 
-		$(".obstacle").each(function () {
-			const obstaclePos = this.getBoundingClientRect();
+  // Verificar colisões
+  function checkCollision() {
+    const tolerance = 10;
+    const heroPos = hero[0].getBoundingClientRect();
 
-			if (
-				!(
-					heroPos.right < obstaclePos.left + tolerance ||
-					heroPos.left > obstaclePos.right - tolerance ||
-					heroPos.bottom < obstaclePos.top ||
-					heroPos.top > obstaclePos.bottom
-				)
-			) {
-				gameOver();
-			}
-		});
-	}
+    $(".obstacle").each(function () {
+      const obstaclePos = this.getBoundingClientRect();
 
-	setInterval(checkCollision, 100);
+      if (
+        !( 
+          heroPos.right < obstaclePos.left + tolerance ||
+          heroPos.left > obstaclePos.right - tolerance ||
+          heroPos.bottom < obstaclePos.top ||
+          heroPos.top > obstaclePos.bottom
+        )
+      ) {
+        gameOver();
+      }
+    });
+  }
 
-	function checkWin() {
-		const heroPos = hero[0].getBoundingClientRect();
-		const finishPos = finishLine[0].getBoundingClientRect();
+  setInterval(checkCollision, 100);
 
-		if (
-			!(
-				heroPos.right < finishPos.left ||
-				heroPos.left > finishPos.right ||
-				heroPos.bottom < finishPos.top ||
-				heroPos.top > finishPos.bottom
-			)
-		) {
-			gameWin();
-		}
-	}
+  // Verificar vitória
+  function checkWin() {
+    const heroPos = hero[0].getBoundingClientRect();
+    const finishPos = finishLine[0].getBoundingClientRect();
 
-	function gameOver() {
-		if (!gameRunning) return;
-		gameRunning = false;
-		clearInterval(intervalId);
-		$(".start").fadeOut();
-		$(".game-over").fadeIn();
-	}
+    if (
+      !( 
+        heroPos.right < finishPos.left ||
+        heroPos.left > finishPos.right ||
+        heroPos.bottom < finishPos.top ||
+        heroPos.top > finishPos.bottom
+      )
+    ) {
+      gameWin();
+    }
+  }
 
-	function gameWin() {
-		if (!gameRunning) return;
-		gameRunning = false;
-		clearInterval(intervalId);
-		const now = Date.now();
-		const elapsed = now - startTime;
-		if (elapsed < highestScore || highestScore === 0) {
-			highestScore = elapsed;
-			const minutes = Math.floor(highestScore / (1000 * 60));
-			const seconds = Math.floor((highestScore % (1000 * 60)) / 1000);
-			const milliseconds = Math.floor((highestScore % 1000) / 10);
-			$("#highestScore, .highestScore").text(
-				`${pad(minutes, 2)}:${pad(seconds, 2)}`
-			);
-		}
-		$(".win").fadeIn();
-		$(".bestTime").fadeIn();
-	}
+  function gameOver() {
+    if (!gameRunning) return;
+    gameRunning = false;
+    clearInterval(intervalId);
+    $(".start").fadeOut();
+    $(".game-over").fadeIn();
+  }
 
-	$(".restartButton").click(function () {
-		resetGame();
-		$(".game-over, .win").fadeOut();
-	});
+  function gameWin() {
+    if (!gameRunning) return;
+    gameRunning = false;
+    clearInterval(intervalId);
+    const now = Date.now();
+    const elapsed = now - startTime;
+    if (elapsed < highestScore) {
+      highestScore = elapsed;
+      const minutes = Math.floor(highestScore / (1000 * 60));
+      const seconds = Math.floor((highestScore % (1000 * 60)) / 1000);
+      $("#highestScore, .highestScore").text(`${pad(minutes, 2)}:${pad(seconds, 2)}`);
+    }
+    $(".win").fadeIn();
+    $(".bestTime").fadeIn();
+  }
 
-	function resetGame() {
-		gameRunning = true;
-		timerStarted = false;
-		clearInterval(intervalId);
-		$("#chronometer, .chronometer").text("00:00");
+  $(".restartButton").click(function () {
+    resetGame();
+    $(".game-over, .win").fadeOut();
+  });
 
-		// Reset hero position
-		hero.css("top", "calc(50% + 200px)");
-		hero.removeClass("invert");
+  function resetGame() {
+    gameRunning = true;
+    timerStarted = false;
+    clearInterval(intervalId);
+    $("#chronometer, .chronometer").text("00:00");
 
-		// Reset obstacles, bush, floor, and finish line positions
-		$(".obstacle, .bush, .floor, .object, #finishLine").each(function () {
-			$(this).css("left", $(this).data("initialLeft"));
-		});
-	}
+    // Resetar a posição do herói
+    hero.css("top", "calc(50% + 200px)");
+    hero.removeClass("invert");
 
-	// Store initial positions
-	$(".obstacle, .bush, .floor, .object, #finishLine").each(function () {
-		$(this).data("initialLeft", $(this).css("left"));
-	});
+    // Resetar obstáculos, plantas, chão e linha de chegada
+    $(".obstacle, .bush, .floor, .object, #finishLine").each(function () {
+      $(this).css("left", $(this).data("initialLeft"));
+    });
+  }
 
-	// Loop through each .bush element
-	$(".bush").each(function (index) {
-		var $bush = $(this);
+  // Armazenar posições iniciais
+  $(".obstacle, .bush, .floor, .object, #finishLine").each(function () {
+    $(this).data("initialLeft", $(this).css("left"));
+  });
 
-		function toggleObstacle() {
-			$bush.toggleClass("obstacle monster");
-			setTimeout(
-				toggleObstacle,
-				$bush.hasClass("obstacle monster")
-					? getToggleTime(index, true)
-					: getToggleTime(index, false)
-			);
-		}
+  // Função para verificar sobreposição de silhuetas
+  function checkHeroSilhouetteOverlap() {
+    const heroPos = hero[0].getBoundingClientRect();
+    let heroInFrontOfEyes = false;
 
-		toggleObstacle();
-	});
+    $(".silhouette").each(function () {
+      const bushPos = this.getBoundingClientRect();
 
-	// Function to get the toggle time based on the index and class status
-	function getToggleTime(index, isObstacle) {
-		// Define the toggle times for each nth-child
-		var toggleTimes = [
-			[3000, 4000], // nth-child(1)
-			[4000, 5000], // nth-child(2)...
-			[5000, 6500],
-			[3500, 4000],
-			[6000, 7000]
-		];
+      if (
+        !( 
+          heroPos.right < bushPos.left ||
+          heroPos.left > bushPos.right ||
+          heroPos.bottom < bushPos.top ||
+          heroPos.top > bushPos.bottom
+        )
+      ) {
+        heroInFrontOfEyes = true;
+      }
+    });
 
-		// Return the appropriate time based on the index and class status
-		return isObstacle ? toggleTimes[index][0] : toggleTimes[index][1];
-	}
+    if (heroInFrontOfEyes) {
+      hero.addClass("invert");
+    } else {
+      hero.removeClass("invert");
+    }
+  }
 
-	function checkHeroSilhouetteOverlap() {
-		const heroPos = hero[0].getBoundingClientRect();
-		let heroInFrontOfEyes = false;
-
-		$(".silhouette").each(function () {
-			const bushPos = this.getBoundingClientRect();
-
-			if (
-				!(
-					heroPos.right < bushPos.left ||
-					heroPos.left > bushPos.right ||
-					heroPos.bottom < bushPos.top ||
-					heroPos.top > bushPos.bottom
-				)
-			) {
-				heroInFrontOfEyes = true;
-			}
-		});
-
-		if (heroInFrontOfEyes) {
-			hero.addClass("invert");
-		} else {
-			hero.removeClass("invert");
-		}
-	}
 });
