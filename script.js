@@ -102,12 +102,13 @@ $(document).ready(function () {
     });
   }
 
+  // Detecção de rolagem com o mouse
   $(window).on("wheel", function (e) {
     const scrollDirection = e.originalEvent.deltaY < 0 ? -1 : 1;
     handleScroll(scrollDirection);
   });
 
-  // Manipulador de toque
+  // Manipulador de toque (gestos de swipe)
   $(document).on("touchstart", function (e) {
     touchStartX = e.originalEvent.touches[0].pageX;
     touchStartY = e.originalEvent.touches[0].pageY;
@@ -271,4 +272,3 @@ $(document).ready(function () {
     }
   }
 });
-
