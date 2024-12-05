@@ -102,13 +102,13 @@ $(document).ready(function () {
     });
   }
 
-  // Detecção de rolagem com o mouse
+  // Detecção de movimento com o scroll do mouse
   $(window).on("wheel", function (e) {
     const scrollDirection = e.originalEvent.deltaY < 0 ? -1 : 1;
     handleScroll(scrollDirection);
   });
 
-  // Manipulador de toque (gestos de swipe)
+  // Manipulador de toque (gestos de touchscreen)
   $(document).on("touchstart", function (e) {
     touchStartX = e.originalEvent.touches[0].pageX;
     touchStartY = e.originalEvent.touches[0].pageY;
@@ -139,7 +139,7 @@ $(document).ready(function () {
     const touchEndY = e.originalEvent.touches[0].pageY;
 
     if (touchStartY - touchEndY > 50) {
-      // Detecção de swipe para cima
+      // Detecção de movimento scroll e touch para cima
       handleJump();
     }
   });
