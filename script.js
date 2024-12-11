@@ -9,13 +9,13 @@ $(document).ready(function () {
   let gameRunning = true;
   let timerStarted = false;
   let startTime, intervalId;
-  let highestScore = Infinity; // Inicialize com um valor maior que qualquer tempo
-  const scrollSpeed = 20; // Aumente a velocidade do scroll
+  let highestScore = Infinity; // Inicializa com um valor maior que qualquer tempo
+  const scrollSpeed = 20; // Aumenta a velocidade do scroll
   let isJumping = false;
   let lastScrollTime = 0;
   let isRunningRight = false;
   let isRunningLeft = false;
-  let lastDirection = "idle-right"; // Começar com o personagem parado à direita
+  let lastDirection = "idle-right"; // Começa com o personagem parado à direita
   let touchStartX = 0;
   let touchStartY = 0;
 
