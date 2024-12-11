@@ -1,17 +1,4 @@
 
-// Teste simples para ver se o JavaScript está carregado
-console.log("JavaScript carregado corretamente!");
-
-// Função para reiniciar o jogo
-document.querySelector('.restartButton').addEventListener('click', function() {
-  alert('O jogo será reiniciado!');
-});
-
-
-
-
-
-
 $(document).ready(function () {
   const hero = $("#hero");
   const obstacles = $(".obstacle");
